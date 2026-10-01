@@ -2,8 +2,8 @@
 
 TypeSafe AI provider for the Backdrop CMS AI module.
 
-Adds TypeSafe AI's Jev decision models to the providers the `ai` module can
-route to, using the `/v1/decisions` endpoint at `https://api.typesafe.ai`. Jev
+Adds TypeSafe AI's decision models to the providers the `ai` module can route
+to, using the `/v1/systemone` endpoint at `https://api.typesafe.ai`. These
 models return typed judgments with calibrated probabilities instead of
 generated text, which suits fast classification and moderation checks.
 
@@ -11,8 +11,8 @@ generated text, which suits fast classification and moderation checks.
 
 | Operation | Supported | Notes |
 |---|---|---|
-| Decisions | Yes | `boolean`, `choice` and `score` questions via the adapter's `decide()` method. |
-| Moderation | Yes | Implemented as a single boolean decision; returns the flag and its probability. |
+| Decisions | Yes | `boolean`, `choice` and `score` questions via `decide()`; choice questions take `options`, score questions optional `levels` (2-10, low to high). |
+| Moderation | Yes | Implemented as a single boolean decision; `score` is the probability of a violation. |
 | Chat | No | |
 | Completions | No | |
 | Tool calling | No | |
@@ -24,11 +24,11 @@ generated text, which suits fast classification and moderation checks.
 
 ## Models
 
-- `jev-1` — standard calibrated decision and moderation model (the default).
-- `jev-1-mini` — lighter, faster model for high-throughput checks such as
-  entity save or form validation.
+The model list is fetched from TypeSafe AI's `/v1/models` endpoint, so new
+models appear without a module update. When no model is chosen, the first
+listed model is used. See https://docs.typesafe.ai/models.
 
-The decisions endpoint and request timeout are stored in
+The decision endpoint and request timeout are stored in
 `ai_provider_typesafeai.settings` (`endpoint`, `timeout`).
 
 ## Installation
@@ -37,7 +37,7 @@ The decisions endpoint and request timeout are stored in
 - Create an authentication key with the Key module holding your TypeSafe AI API
   key (https://console.typesafe.ai/keys).
 - Enable and configure the provider at `admin/config/ai/settings`, and select
-  `jev-1` or `jev-1-mini` as the default decision or moderation model as needed.
+  a default decision or moderation model as needed.
 
 ## Issues
 
