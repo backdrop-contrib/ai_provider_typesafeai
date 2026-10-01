@@ -39,30 +39,20 @@ class TypeSafeAIAdapter extends AIAdapterBase {
     }
 
     $models = [];
-    if (function_exists('backdrop_http_request')) {
-      try {
-        $result = $this->makeRequest($this->baseUrl . '/models', [], [], 'GET', 10);
-        if (!empty($result['data']) && is_array($result['data'])) {
-          foreach ($result['data'] as $model) {
-            $id = $model['id'] ?? ($model['name'] ?? NULL);
-            if (!empty($id)) {
-              $models[$id] = $model['name'] ?? $id;
-            }
-          }
+    try {
+      // GET /v1/models returns {"models": [{"name", "description", ...}]}.
+      $result = $this->makeRequest($this->baseUrl . '/models', [], [], 'GET', 10);
+      foreach ((array) ($result['models'] ?? []) as $model) {
+        $id = is_array($model) ? (string) ($model['name'] ?? '') : '';
+        if ($id !== '') {
+          $models[$id] = $id;
         }
       }
-      catch (\Throwable $e) {
-        watchdog('ai_provider_typesafeai', 'Failed to fetch TypeSafe AI models: @message', [
-          '@message' => $e->getMessage(),
-        ], WATCHDOG_DEBUG);
-      }
     }
-
-    if (empty($models)) {
-      $models = [
-        'jev-1' => 'TypeSafe Jev-1',
-        'jev-1-mini' => 'TypeSafe Jev-1 Mini',
-      ];
+    catch (\Throwable $e) {
+      watchdog('ai_provider_typesafeai', 'Failed to fetch TypeSafe AI models: @message', [
+        '@message' => $e->getMessage(),
+      ], WATCHDOG_WARNING);
     }
 
     asort($models);
@@ -144,24 +134,27 @@ class TypeSafeAIAdapter extends AIAdapterBase {
       return [];
     }
 
-    $model = $model ?: 'jev-1';
-    $config = function_exists('config') ? config('ai_provider_typesafeai.settings') : NULL;
-    $endpoint = $config ? ($config->get('endpoint') ?: ($this->baseUrl . '/decisions')) : ($this->baseUrl . '/decisions');
-    $timeout = $config ? (int) ($config->get('timeout') ?: 30) : 30;
+    if ($model === '') {
+      $model = (string) array_key_first($this->getDecisionModels());
+      if ($model === '') {
+        throw new \RuntimeException('No TypeSafe AI decision models are available.');
+      }
+    }
+    $config = config('ai_provider_typesafeai.settings');
+    $endpoint = (string) ($config->get('endpoint') ?: $this->baseUrl . '/systemone');
+    $timeout = (int) ($config->get('timeout') ?: 30);
 
+    [$question_map, $meta] = AIDecisionHelper::buildQuestions($questions);
     $payload = [
       'model' => $model,
-      'input' => $input,
-      'questions' => $questions,
+      'state' => $input,
+      'questions' => $question_map,
     ];
 
     try {
       $response = $this->makeRequest($endpoint, $payload, [], 'POST', $timeout);
-      $decisions = isset($response['decisions']) && is_array($response['decisions'])
-        ? $response['decisions']
-        : (is_array($response) ? $response : []);
-
-      return $this->normalizeDecisions($questions, $decisions);
+      $this->captureProviderUsage($response);
+      return AIDecisionHelper::parseAnswers($response, $meta);
     }
     catch (\Exception $e) {
       watchdog('ai_provider_typesafeai', 'TypeSafe AI decision request failed for model @model: @message', [
@@ -175,7 +168,12 @@ class TypeSafeAIAdapter extends AIAdapterBase {
   /**
    * {@inheritdoc}
    */
-  public function moderation(string $input, string $model = 'jev-1'): array {
+  public function moderation(string $input, string $model = ''): array {
+    // Callers may pass another provider's default model name; use a listed
+    // TypeSafe model instead.
+    if (!isset($this->getModerationModels()[$model])) {
+      $model = '';
+    }
     $questions = [
       [
         'id' => 'moderation_check',
@@ -187,7 +185,8 @@ class TypeSafeAIAdapter extends AIAdapterBase {
     try {
       $decisions = $this->decide($input, $questions, $model);
       $flagged = !empty($decisions[0]['answer']);
-      $score = isset($decisions[0]['probability']) ? (float) $decisions[0]['probability'] : 0.0;
+      // Probability of a violation, not of whichever answer won.
+      $score = (float) ($decisions[0]['probabilities']['true'] ?? 0.0);
 
       return [
         'flagged' => $flagged,
