@@ -1,0 +1,5 @@
+{
+  "_config_name": "ai_provider_typesafeai.settings",
+  "endpoint": "https://api.typesafe.ai/v1/decisions",
+  "timeout": 30
+}

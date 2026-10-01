@@ -1,0 +1,8 @@
+name = AI Provider TypeSafe AI
+description = Provides TypeSafe AI and Jev native decision models for the AI module.
+backdrop = 1.x
+type = module
+php = 8.2
+package = AI
+dependencies[] = ai
+dependencies[] = key

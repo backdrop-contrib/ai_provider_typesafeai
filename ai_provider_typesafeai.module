@@ -1,0 +1,43 @@
+<?php
+
+/**
+ * @file
+ * TypeSafe AI provider for AI core.
+ */
+
+/**
+ * Implements hook_config_info().
+ */
+function ai_provider_typesafeai_config_info() {
+  return [
+    'ai_provider_typesafeai.settings' => [
+      'label' => t('TypeSafe AI Provider Settings'),
+      'group' => t('AI'),
+    ],
+  ];
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function ai_provider_typesafeai_autoload_info() {
+  return [
+    'TypeSafeAIAdapter' => 'includes/TypeSafeAIAdapter.php',
+  ];
+}
+
+/**
+ * Implements hook_ai_provider_info().
+ */
+function ai_provider_typesafeai_ai_provider_info() {
+  return [
+    'typesafeai' => [
+      'label' => t('TypeSafe AI'),
+      'description' => t('Native calibrated decision and moderation models powered by TypeSafe AI.'),
+      'class' => 'TypeSafeAIAdapter',
+      'website' => 'https://typesafe.ai/',
+      'key_url' => 'https://console.typesafe.ai/keys',
+      'models_url' => 'https://docs.typesafe.ai/models',
+    ],
+  ];
+}
