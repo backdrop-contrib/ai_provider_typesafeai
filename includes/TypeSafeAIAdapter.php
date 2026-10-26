@@ -145,14 +145,23 @@ class TypeSafeAIAdapter extends AIAdapterBase {
     $timeout = (int) ($config->get('timeout') ?: 30);
 
     [$question_map, $meta] = AIDecisionHelper::buildQuestions($questions);
+    [$state, $assets] = AIDecisionHelper::buildState($input, (array) ($context_extra['images'] ?? []));
     $payload = [
       'model' => $model,
-      'state' => $input,
+      'state' => $state,
       'questions' => $question_map,
     ];
+    $headers = [];
+    if ($assets) {
+      $payload['assets'] = $assets;
+    }
+    // Images and Box questions are opt-in per request.
+    if ($assets || in_array('box', array_column($question_map, 'type'), TRUE)) {
+      $headers['TypeSafe-Danger-Zone-Images'] = 'true';
+    }
 
     try {
-      $response = $this->makeRequest($endpoint, $payload, [], 'POST', $timeout);
+      $response = $this->makeRequest($endpoint, $payload, $headers, 'POST', $timeout);
       $this->captureProviderUsage($response);
       return AIDecisionHelper::parseAnswers($response, $meta);
     }
