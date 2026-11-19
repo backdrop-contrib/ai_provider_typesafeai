@@ -1,43 +1,18 @@
 # AI Provider TypeSafe AI
 
-TypeSafe AI provider for the Backdrop CMS AI module.
+Connect Backdrop’s AI features to TypeSafe AI for structured judgments with probability scores. Use it to answer yes-or-no questions, choose a category, score an input, or check content for policy violations.
 
-Adds TypeSafe AI's decision models to the providers the `ai` module can route
-to, using the `/v1/systemone` endpoint at `https://api.typesafe.ai`. These
-models return typed judgments with calibrated probabilities instead of
-generated text, which suits fast classification and moderation checks.
+## Requirements
 
-## Supported operations
-
-| Operation | Supported | Notes |
-|---|---|---|
-| Decisions | Yes | `boolean`, `choice` and `score` questions via `decide()`; choice questions take `options`, score questions optional `levels` (2-10, low to high). |
-| Moderation | Yes | Implemented as a single boolean decision; `score` is the probability of a violation. |
-| Chat | No | |
-| Completions | No | |
-| Tool calling | No | |
-| Vision | No | |
-| Embeddings | No | |
-| Image generation | No | |
-| Speech-to-text | No | |
-| Text-to-speech | No | |
-
-## Models
-
-The model list is fetched from TypeSafe AI's `/v1/models` endpoint, so new
-models appear without a module update. When no model is chosen, the first
-listed model is used. See https://docs.typesafe.ai/models.
-
-The decision endpoint and request timeout are stored in
-`ai_provider_typesafeai.settings` (`endpoint`, `timeout`).
+Backdrop CMS 1.x, PHP 8.2 or later, and the AI module, plus the Key module.
 
 ## Installation
 
-- Install this module using the official [Backdrop CMS instructions](https://backdropcms.org/user-guide/modules).
-- Create an authentication key with the Key module holding your TypeSafe AI API
-  key (https://console.typesafe.ai/keys).
-- Enable and configure the provider at `admin/config/ai/settings`, and select
-  a default decision or moderation model as needed.
+1. Install and enable this module using the official [Backdrop CMS instructions](https://backdropcms.org/user-guide/modules).
+2. Open **AI settings** at `admin/config/ai/settings` and enable the provider. Select the service credential you saved with the Key module.
+3. Choose a default decision or moderation model at `admin/config/ai/settings/defaults`.
+
+Read the [module wiki](https://github.com/backdrop-contrib/ai_provider_typesafeai/wiki) for setup details, supported operations, and troubleshooting.
 
 ## Issues
 
